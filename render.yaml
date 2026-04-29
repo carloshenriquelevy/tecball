@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: tecball
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tecball-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SECURE_COOKIES
+        value: "true"
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "10080"
+      - key: ALGORITHM
+        value: "HS256"
+
+databases:
+  - name: tecball-db
+    databaseName: tecball
+    plan: free

@@ -4,6 +4,9 @@ import os
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/tecball")
+# Render envia "postgres://" mas SQLAlchemy exige "postgresql://"
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
