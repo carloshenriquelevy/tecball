@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+{% block title %}Início — TecBall 2026{% endblock %}
+
+{% block content %}
+
+<!-- Hero slim -->
+<div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
+    <div>
+        <p class="text-sm text-gray-500 font-semibold uppercase tracking-widest mb-0.5">TecBall · Copa 2026</p>
+        <h1 class="text-xl font-black text-gray-900">{{ user.name.split()[0] | capitalize }}</h1>
+    </div>
+    <div class="flex items-center gap-5">
+        <div class="text-right">
+            <div class="text-2xl font-black text-gray-900 tabular-nums leading-none">{{ total_pts }}</div>
+            <div class="text-sm text-gray-500 uppercase tracking-wide mt-0.5">pts</div>
+        </div>
+        <div class="w-px h-7 bg-gray-200"></div>
+        <div class="text-right">
+            <div class="text-2xl font-black text-gray-900 tabular-nums leading-none">
+                {% if position %}{{ position }}º{% else %}–{% endif %}
+            </div>
+            <div class="text-sm text-gray-500 uppercase tracking-wide mt-0.5">de {{ total_players }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Main grid -->
+<div class="grid lg:grid-cols-3 gap-6">
+
+    <!-- LEFT: Today's matches / next match -->
+    <div class="lg:col-span-2">
+
+        {% if today_matches %}
+
+        <!-- Compute progress -->
+        {% set ns = namespace(open_count=0, bet_count=0) %}
+        {% for m in today_matches %}
+            {% if is_match_open(m) %}
+                {% set ns.open_count = ns.open_count + 1 %}
+                {% if user_bets.get(m.id) %}{% set ns.bet_count = ns.bet_count + 1 %}{% endif %}
+            {% endif %}
+        {% endfor %}
+
+        <!-- Section header -->
+        <div class="flex items-center gap-3 mb-4">
+            <h2 class="text-base font-bold text-gray-900">Jogos de hoje</h2>
+            {% if ns.open_count > 0 %}
+            <span class="text-sm font-bold px-2.5 py-0.5 rounded-full
+                {% if ns.bet_count == ns.open_count %}bg-green-100 text-green-700{% else %}bg-orange-100 text-orange-700{% endif %}">
+                {{ ns.bet_count }}/{{ ns.open_count }}{% if ns.bet_count == ns.open_count %} ✓{% endif %}
+            </span>
+            {% endif %}
+            <div class="flex-1 h-px bg-gray-200"></div>
+            <a href="/palpites" class="text-sm text-gray-400 hover:text-green-600 font-medium transition-colors shrink-0">Ver todos →</a>
+        </div>
+
+        <!-- Match cards -->
+        <div class="space-y-3">
+        {% for match in today_matches %}
+        {% set bet = user_bets.get(match.id) %}
+        {% set open = is_match_open(match) %}
+        {% set home_name = match.home_team.name if match.home_team else 'A definir' %}
+        {% set away_name = match.away_team.name if match.away_team else 'A definir' %}
+        {% set home_flag = match.home_team.flag if match.home_team else '🏳' %}
+        {% set away_flag = match.away_team.flag if match.away_team else '🏳' %}
+        {% set group_label = ('Grupo ' + match.group.name) if match.group else match.stage.value %}
+
+        {% if open and not bet %}
+        <!-- Priority: open, no bet -->
+        <div class="bg-white rounded-2xl border-2 border-green-500 shadow-sm overflow-hidden">
+            <div class="px-5 py-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-semibold text-gray-400">{{ group_label }}</span>
+                    <div class="flex items-center gap-2">
+                        {% if match.match_date %}
+                        <span class="text-sm text-gray-500 font-medium">{{ match.match_date.strftime('%H:%M') }}</span>
+                        <span class="text-sm font-semibold text-gray-400 countdown"
+                              data-kickoff="{{ match.match_date.strftime('%Y-%m-%dT%H:%M:00') }}Z">–</span>
+                        <span class="urgency-badge hidden text-sm font-bold px-2 py-0.5 rounded-full border"></span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
+                        <span class="font-bold text-gray-900 text-sm truncate text-right">{{ home_name }}</span>
+                        <span class="text-2xl shrink-0">{{ home_flag }}</span>
+                    </div>
+                    <div class="shrink-0 text-gray-200 font-black text-xl px-1 select-none">–</div>
+                    <div class="flex-1 flex items-center gap-2 min-w-0">
+                        <span class="text-2xl shrink-0">{{ away_flag }}</span>
+                        <span class="font-bold text-gray-900 text-sm truncate">{{ away_name }}</span>
+                    </div>
+                </div>
+                <form method="post" action="/palpites/{{ match.id }}"
+                      class="flex items-center justify-center gap-3">
+                    <input type="number" name="home_score" min="0" max="20" required
+                        value="" placeholder="0"
+                        class="w-16 h-12 rounded-xl border-2 border-gray-200 text-center text-xl font-black text-gray-900
+                               focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors">
+                    <span class="text-xl text-gray-200 font-black select-none">–</span>
+                    <input type="number" name="away_score" min="0" max="20" required
+                        value="" placeholder="0"
+                        class="w-16 h-12 rounded-xl border-2 border-gray-200 text-center text-xl font-black text-gray-900
+                               focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors">
+                    <button type="submit"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold px-5 py-3 rounded-xl transition-colors text-sm">
+                        Apostar
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% elif open %}
+        <!-- Open, bet placed -->
+        <div class="bg-white rounded-2xl border border-green-200 shadow-sm overflow-hidden">
+            <div class="px-5 py-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-semibold text-gray-400">{{ group_label }}</span>
+                    {% if match.match_date %}
+                    <span class="text-sm text-gray-400">{{ match.match_date.strftime('%H:%M') }}</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-2 mb-3">
+                    <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
+                        <span class="font-bold text-gray-900 text-sm truncate text-right">{{ home_name }}</span>
+                        <span class="text-2xl shrink-0">{{ home_flag }}</span>
+                    </div>
+                    <div class="shrink-0 text-gray-200 font-black text-xl px-1 select-none">–</div>
+                    <div class="flex-1 flex items-center gap-2 min-w-0">
+                        <span class="text-2xl shrink-0">{{ away_flag }}</span>
+                        <span class="font-bold text-gray-900 text-sm truncate">{{ away_name }}</span>
+                    </div>
+                </div>
+                <form method="post" action="/palpites/{{ match.id }}"
+                      class="flex items-center justify-center gap-3">
+                    <input type="number" name="home_score" min="0" max="20" required
+                        value="{{ bet.home_score }}" placeholder="0"
+                        class="w-16 h-12 rounded-xl border-2 border-green-400 bg-green-50 text-center text-xl font-black text-gray-900
+                               focus:outline-none focus:ring-2 focus:ring-green-400 transition-colors">
+                    <span class="text-xl text-gray-200 font-black select-none">–</span>
+                    <input type="number" name="away_score" min="0" max="20" required
+                        value="{{ bet.away_score }}" placeholder="0"
+                        class="w-16 h-12 rounded-xl border-2 border-green-400 bg-green-50 text-center text-xl font-black text-gray-900
+                               focus:outline-none focus:ring-2 focus:ring-green-400 transition-colors">
+                    <button type="submit"
+                            class="bg-green-600 hover:bg-green-700 text-white font-bold px-5 py-3 rounded-xl transition-colors text-sm">
+                        ✓
+                    </button>
+                </form>
+                <p class="text-sm text-center text-green-600 mt-2 font-medium">Apostado · toque para atualizar</p>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- In progress -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden opacity-60">
+            <div class="px-5 py-3">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-semibold text-gray-400">{{ group_label }}</span>
+                    <span class="inline-flex items-center gap-1 text-sm font-semibold text-green-600">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Ao vivo
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
+                        <span class="font-bold text-gray-700 text-sm truncate text-right">{{ home_name }}</span>
+                        <span class="text-xl shrink-0">{{ home_flag }}</span>
+                    </div>
+                    <div class="shrink-0 text-gray-200 font-black text-lg px-1 select-none">–</div>
+                    <div class="flex-1 flex items-center gap-2 min-w-0">
+                        <span class="text-xl shrink-0">{{ away_flag }}</span>
+                        <span class="font-bold text-gray-700 text-sm truncate">{{ away_name }}</span>
+                    </div>
+                </div>
+                {% if bet %}
+                <div class="flex items-center justify-center gap-2 mt-2">
+                    <span class="text-sm text-gray-400">Palpite</span>
+                    <span class="text-sm font-bold text-gray-500 tabular-nums">{{ bet.home_score }} – {{ bet.away_score }}</span>
+                </div>
+                {% else %}
+                <p class="text-sm text-center text-gray-400 mt-2 italic">Sem palpite</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% endfor %}
+        </div>
+
+        {% elif next_match %}
+        <!-- No games today — show next upcoming match -->
+        {% set bet = user_bets.get(next_match.id) %}
+        {% set open = is_match_open(next_match) %}
+        {% set home_name = next_match.home_team.name if next_match.home_team else 'A definir' %}
+        {% set away_name = next_match.away_team.name if next_match.away_team else 'A definir' %}
+        {% set home_flag = next_match.home_team.flag if next_match.home_team else '🏳' %}
+        {% set away_flag = next_match.away_team.flag if next_match.away_team else '🏳' %}
+        {% set group_label = ('Grupo ' + next_match.group.name) if next_match.group else next_match.stage.value %}
+
+        <div class="flex items-center gap-3 mb-4">
+            <h2 class="text-base font-bold text-gray-900">Próximo jogo</h2>
+            {% if next_match.match_date %}
+            <span class="text-sm text-gray-400 font-medium">{{ next_match.match_date.strftime('%d/%m · %H:%M') }}</span>
+            {% endif %}
+            <div class="flex-1 h-px bg-gray-200"></div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden
+                    {% if open and not bet %}border-2 border-green-500{% elif bet %}border border-green-200{% else %}border border-gray-200{% endif %}">
+            <div class="px-5 py-4">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-semibold text-gray-400">{{ group_label }}</span>
+                    {% if open and not bet %}
+                    <span class="text-sm font-semibold text-orange-500">Sem palpite</span>
+                    {% elif bet %}
+                    <span class="text-sm font-semibold text-green-600">✓ Apostado</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
+                        <span class="font-bold text-gray-900 text-sm truncate text-right">{{ home_name }}</span>
+                        <span class="text-2xl shrink-0">{{ home_flag }}</span>
+                    </div>
+                    <div class="shrink-0 text-gray-200 font-black text-xl px-1 select-none">–</div>
+                    <div class="flex-1 flex items-center gap-2 min-w-0">
+                        <span class="text-2xl shrink-0">{{ away_flag }}</span>
+                        <span class="font-bold text-gray-900 text-sm truncate">{{ away_name }}</span>
+                    </div>
+                </div>
+                {% if open %}
+                <form method="post" action="/palpites/{{ next_match.id }}"
+                      class="flex items-center justify-center gap-3">
+                    <input type="number" name="home_score" min="0" max="20" required
+                        value="{{ bet.home_score if bet else '' }}" placeholder="0"
+                        class="w-16 h-12 rounded-xl border-2 text-center text-xl font-black text-gray-900
+                               focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors
+                               {% if bet %}border-green-400 bg-green-50{% else %}border-gray-200{% endif %}">
+                    <span class="text-xl text-gray-200 font-black select-none">–</span>
+                    <input type="number" name="away_score" min="0" max="20" required
+                        value="{{ bet.away_score if bet else '' }}" placeholder="0"
+                        class="w-16 h-12 rounded-xl border-2 text-center text-xl font-black text-gray-900
+                               focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors
+                               {% if bet %}border-green-400 bg-green-50{% else %}border-gray-200{% endif %}">
+                    <button type="submit"
+                            class="{% if bet %}bg-green-600 hover:bg-green-700{% else %}bg-gray-800 hover:bg-gray-900{% endif %} text-white font-bold px-5 py-3 rounded-xl transition-colors text-sm">
+                        {% if bet %}✓{% else %}Apostar{% endif %}
+                    </button>
+                </form>
+                {% if bet %}
+                <p class="text-sm text-center text-green-600 mt-2 font-medium">Apostado · toque para atualizar</p>
+                {% endif %}
+                {% else %}
+                <div class="text-center py-1">
+                    <span class="text-sm text-gray-400 italic">Prazo encerrado</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-4 text-center">
+            <a href="/palpites" class="text-sm text-gray-500 hover:text-green-600 font-medium transition-colors">
+                Ver todos os próximos jogos →
+            </a>
+        </div>
+
+        {% else %}
+        <!-- No upcoming matches -->
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
+            <div class="text-4xl mb-3">✅</div>
+            <p class="font-bold text-gray-700 text-lg">Nenhum jogo futuro</p>
+            <p class="text-gray-400 text-sm mt-1">Todos os jogos já foram realizados.</p>
+            <a href="/jogos" class="inline-block mt-5 bg-gray-800 hover:bg-gray-900 text-white font-bold px-6 py-3 rounded-xl transition-colors text-sm">
+                Ver resultados
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- RIGHT: Sidebar -->
+    <div class="lg:col-span-1 space-y-4">
+
+        <!-- Mini ranking -->
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div class="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                <span class="text-sm font-bold text-gray-800">Ranking</span>
+                <a href="/ranking" class="text-sm text-green-600 hover:text-green-700 font-semibold transition-colors">Ver tudo →</a>
+            </div>
+            <div class="divide-y divide-gray-50 px-4">
+                {% for r in mini_ranking %}
+                <div class="flex items-center gap-2.5 py-2.5 {% if r.id == user.id %}-mx-4 px-4 bg-green-50{% endif %}">
+                    <span class="text-sm font-black w-5 shrink-0 text-center
+                        {% if loop.index == 1 %}text-yellow-500
+                        {% elif loop.index == 2 %}text-gray-400
+                        {% elif loop.index == 3 %}text-amber-600
+                        {% else %}text-gray-300{% endif %}">
+                        {% if loop.index == 1 %}🥇
+                        {% elif loop.index == 2 %}🥈
+                        {% elif loop.index == 3 %}🥉
+                        {% else %}{{ loop.index }}{% endif %}
+                    </span>
+                    <div class="w-6 h-6 rounded-full {% if r.id == user.id %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-600{% endif %} flex items-center justify-center text-sm font-bold shrink-0">
+                        {{ r.name[0].upper() }}
+                    </div>
+                    <a href="/usuarios/{{ r.id }}"
+                       class="flex-1 text-sm truncate hover:underline
+                              {% if r.id == user.id %}font-bold text-green-800{% else %}text-gray-700 hover:text-green-700{% endif %}">
+                        {{ r.name.split()[0] }}
+                    </a>
+                    <span class="text-sm font-black text-gray-900 tabular-nums shrink-0">{{ r.total }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Quick nav grid -->
+        <div class="grid grid-cols-2 gap-2">
+            <a href="/palpites"
+               class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex flex-col items-center gap-1.5 hover:border-green-200 hover:bg-green-50 transition-colors group text-center">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                <span class="text-sm font-semibold text-gray-700 group-hover:text-green-700 transition-colors">Palpites</span>
+            </a>
+            <a href="/tabela"
+               class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex flex-col items-center gap-1.5 hover:border-blue-200 hover:bg-blue-50 transition-colors group text-center">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                <span class="text-sm font-semibold text-gray-700 group-hover:text-blue-700 transition-colors">Tabela</span>
+            </a>
+            <a href="/palpites/especiais"
+               class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex flex-col items-center gap-1.5 hover:border-amber-200 hover:bg-amber-50 transition-colors group text-center">
+                <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                <span class="text-sm font-semibold text-gray-700 group-hover:text-amber-700 transition-colors">Especiais</span>
+            </a>
+            <a href="/jogos"
+               class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 flex flex-col items-center gap-1.5 hover:border-gray-300 hover:bg-gray-50 transition-colors group text-center">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                <span class="text-sm font-semibold text-gray-700 group-hover:text-gray-800 transition-colors">Jogos</span>
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<script>
+(function () {
+    var CUTOFF = 5 * 60;
+
+    function fmt(secs) {
+        var d = Math.floor(secs / 86400);
+        var h = Math.floor((secs % 86400) / 3600);
+        var m = Math.floor((secs % 3600) / 60);
+        if (d > 0) return 'em ' + d + 'd ' + h + 'h';
+        if (h > 0) return 'em ' + h + 'h ' + m + 'min';
+        if (m > 0) return 'em ' + m + 'min';
+        return 'em breve';
+    }
+
+    function tick() {
+        var now = Date.now() / 1000;
+        document.querySelectorAll('.countdown[data-kickoff]').forEach(function (el) {
+            var kickoff  = new Date(el.dataset.kickoff).getTime() / 1000;
+            var deadline = kickoff - CUTOFF;
+            var toKick   = Math.floor(kickoff - now);
+            var toDead   = Math.floor(deadline - now);
+            var badge    = el.parentElement.querySelector('.urgency-badge');
+
+            el.textContent = toKick > 0 ? fmt(toKick) : 'em breve';
+
+            if (!badge) return;
+            if (toDead <= 0) { badge.classList.add('hidden'); return; }
+
+            var mins = Math.ceil(toDead / 60);
+            if (toDead <= 600) {
+                badge.className = 'urgency-badge text-sm font-bold px-2 py-0.5 rounded-full border text-red-600 bg-red-50 border-red-200 animate-pulse';
+                badge.textContent = '⚡ Fecha em ' + mins + 'min';
+                badge.classList.remove('hidden');
+            } else if (toDead <= 3600) {
+                badge.className = 'urgency-badge text-sm font-semibold px-2 py-0.5 rounded-full border text-orange-500 bg-orange-50 border-orange-200';
+                badge.textContent = '⚡ ' + mins + 'min';
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        });
+    }
+
+    tick();
+    setInterval(tick, 10000);
+})();
+</script>
+
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Admin — TecBall 2026{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">⚙️ Painel Admin</h1>
+    <p class="text-gray-500 text-sm">Gerencie o bolão TecBall</p>
+</div>
+
+<div class="grid md:grid-cols-4 gap-4 mb-8">
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-primary">{{ total_users }}</div>
+        <div class="text-sm text-gray-500">Participantes</div>
+    </div>
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-blue-500">{{ total_bets }}</div>
+        <div class="text-sm text-gray-500">Palpites enviados</div>
+    </div>
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-accent">{{ finished }}</div>
+        <div class="text-sm text-gray-500">Jogos finalizados</div>
+    </div>
+    <div class="card text-center">
+        <div class="text-3xl font-bold text-gray-600">{{ total_matches }}</div>
+        <div class="text-sm text-gray-500">Total de jogos</div>
+    </div>
+</div>
+
+<div class="grid md:grid-cols-2 gap-4">
+    <div class="card">
+        <h2 class="font-semibold text-gray-700 mb-3">⚽ Jogos</h2>
+        <p class="text-sm text-gray-500 mb-4">Ver lista de jogos, lançar resultados e calcular pontos.</p>
+        <a href="/admin/jogos" class="btn-primary inline-block">Gerenciar jogos</a>
+    </div>
+    <div class="card">
+        <h2 class="font-semibold text-gray-700 mb-3">👥 Usuários</h2>
+        <p class="text-sm text-gray-500 mb-4">Ver participantes e gerenciar permissões de admin.</p>
+        <a href="/admin/usuarios" class="btn-primary inline-block">Gerenciar usuários</a>
+    </div>
+    <div class="card">
+        <h2 class="font-semibold text-gray-700 mb-3">🏅 Palpites Especiais</h2>
+        <p class="text-sm text-gray-500 mb-4">Ver palpites especiais e calcular pontos após a final.</p>
+        <a href="/admin/palpites-especiais" class="btn-primary inline-block">Ver palpites</a>
+    </div>
+    <div class="card">
+        <h2 class="font-semibold text-gray-700 mb-3">📊 Ranking</h2>
+        <p class="text-sm text-gray-500 mb-4">Ver o ranking atualizado de todos os participantes.</p>
+        <a href="/ranking" class="btn-secondary inline-block">Ver ranking</a>
+    </div>
+</div>
+{% endblock %}

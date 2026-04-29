@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Usuários — Admin TecBall{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="/admin" class="text-sm text-gray-400 hover:text-gray-600">← Admin</a>
+    <h1 class="text-2xl font-bold text-gray-800 mt-1">👥 Usuários</h1>
+    <p class="text-gray-500 text-sm">{{ users | length }} participante(s)</p>
+</div>
+
+<div class="card overflow-hidden p-0">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-100">
+            <tr>
+                <th class="text-left px-5 py-3 text-sm font-semibold text-gray-500 uppercase">Nome</th>
+                <th class="text-left px-5 py-3 text-sm font-semibold text-gray-500 uppercase">Email</th>
+                <th class="text-center px-5 py-3 text-sm font-semibold text-gray-500 uppercase">Cadastro</th>
+                <th class="text-center px-5 py-3 text-sm font-semibold text-gray-500 uppercase">Admin</th>
+                <th class="text-center px-5 py-3 text-sm font-semibold text-gray-500 uppercase">Ação</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+        {% for u in users %}
+        <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm">
+                        {{ u.name[0].upper() }}
+                    </div>
+                    <span class="font-medium text-gray-800">{{ u.name }}</span>
+                    {% if u.id == user.id %}<span class="text-sm text-green-600 bg-green-100 px-2 py-0.5 rounded-full">Você</span>{% endif %}
+                </div>
+            </td>
+            <td class="px-5 py-3 text-gray-500">{{ u.email }}</td>
+            <td class="px-5 py-3 text-center text-gray-400">{{ u.created_at.strftime('%d/%m/%Y') }}</td>
+            <td class="px-5 py-3 text-center">
+                {% if u.is_admin %}
+                <span class="text-sm bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">Admin</span>
+                {% else %}
+                <span class="text-sm text-gray-300">—</span>
+                {% endif %}
+            </td>
+            <td class="px-5 py-3 text-center">
+                {% if u.id != user.id %}
+                <form method="post" action="/admin/usuarios/{{ u.id }}/toggle-admin" class="inline">
+                    <button type="submit" class="text-sm text-blue-500 hover:text-blue-700 font-medium">
+                        {% if u.is_admin %}Remover admin{% else %}Tornar admin{% endif %}
+                    </button>
+                </form>
+                {% else %}
+                <span class="text-gray-300 text-sm">—</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

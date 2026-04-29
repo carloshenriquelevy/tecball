@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}Palpites — TecBall 2026{% endblock %}
+
+{% block content %}
+
+<style>
+.day-pill-orange  { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.day-pill-yellow  { background: #fefce8; color: #a16207; border: 1px solid #fde68a; }
+.day-pill-default { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+.day-pill-gray    { background: #f8fafc; color: #94a3b8; border: 1px solid #e2e8f0; }
+.match-closed { opacity: 0.72; }
+</style>
+
+<!-- Header -->
+<div class="flex items-start justify-between gap-4 mb-6 flex-wrap">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Palpites</h1>
+        <p class="text-sm text-gray-600 mt-0.5">
+            {% if total_open > 0 %}
+                {{ total_bet }} de {{ total_open }} jogos apostados
+            {% else %}
+                Nenhum jogo disponível para palpite no momento
+            {% endif %}
+        </p>
+    </div>
+    <div class="flex items-center gap-2">
+        <a href="/tabela"
+           class="text-sm text-gray-500 hover:text-green-700 font-medium px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+            📊 Ver tabela de grupos →
+        </a>
+        <a href="/palpites/especiais"
+           class="inline-flex items-center gap-1.5 text-sm bg-amber-50 hover:bg-amber-100 text-amber-700 font-semibold px-4 py-2 rounded-full border border-amber-200 transition-colors">
+            🏅 Especiais
+        </a>
+    </div>
+</div>
+
+<!-- Progress bar -->
+{% if total_open > 0 %}
+<div class="mb-6">
+    <div class="flex items-center justify-between text-sm text-gray-600 mb-1.5">
+        <span>Progresso dos palpites</span>
+        <span class="font-semibold {% if total_bet == total_open %}text-green-600{% else %}text-gray-500{% endif %}">
+            {{ total_bet }}/{{ total_open }}
+        </span>
+    </div>
+    <div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div class="h-2 rounded-full transition-all
+                    {% if total_bet == total_open %}bg-green-500{% else %}bg-green-400{% endif %}"
+             style="width: {% if total_open > 0 %}{{ (total_bet / total_open * 100) | int }}{% else %}0{% endif %}%">
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Match list grouped by day -->
+{% if not days_labeled %}
+<div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-10 text-center">
+    <div class="text-4xl mb-3">✅</div>
+    <p class="font-bold text-gray-700 text-lg">Nenhum jogo futuro</p>
+    <p class="text-gray-400 text-sm mt-1">Todos os jogos já foram realizados ou não há jogos cadastrados.</p>
+    <a href="/jogos" class="inline-block mt-5 bg-gray-800 hover:bg-gray-900 text-white font-bold px-6 py-3 rounded-xl transition-colors text-sm">
+        Ver jogos encerrados
+    </a>
+</div>
+{% else %}
+
+<div class="space-y-8">
+{% for day, matches, (label, color) in days_labeled %}
+
+    <!-- Day header -->
+    <div>
+        <div class="flex items-center gap-3 mb-4">
+            <span class="text-sm font-bold px-3 py-1 rounded-full day-pill-{{ color }}">{{ label }}</span>
+            <div class="flex-1 h-px bg-gray-200"></div>
+            <span class="text-sm text-gray-400 shrink-0">{{ matches | length }} jogo{{ 's' if matches | length > 1 else '' }}</span>
+        </div>
+
+        <div class="space-y-3">
+        {% for match in matches %}
+        {% set bet = user_bets.get(match.id) %}
+        {% set open = is_match_open(match) %}
+        {% set home_name = match.home_team.name if match.home_team else 'A definir' %}
+        {% set away_name = match.away_team.name if match.away_team else 'A definir' %}
+        {% set home_flag = match.home_team.flag if match.home_team else '🏳' %}
+        {% set away_flag = match.away_team.flag if match.away_team else '🏳' %}
+        {% set group_label = ('Grupo ' + match.group.name) if match.group else match.stage.value %}
+
+        <div class="bg-white rounded-2xl border shadow-sm overflow-hidden
+                    {% if not open %}match-closed border-gray-100{% elif bet %}border-green-200{% else %}border-gray-200{% endif %}">
+            <div class="px-5 py-4">
+
+                <!-- Match meta -->
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-semibold text-gray-600">{{ group_label }} · #{{ match.match_number }}</span>
+                    <div class="flex items-center gap-2">
+                        {% if match.match_date %}
+                        <span class="text-sm text-gray-500 font-medium">{{ match.match_date.strftime('%H:%M') }}</span>
+                        <span class="text-sm text-gray-300">·</span>
+                        {% endif %}
+                        {% if open %}
+                            {% if match.match_date %}
+                            <span class="text-sm font-semibold text-gray-500 countdown"
+                                  data-kickoff="{{ match.match_date.strftime('%Y-%m-%dT%H:%M:00') }}Z">–</span>
+                            <span class="urgency-badge hidden text-sm font-bold px-2 py-0.5 rounded-full border"></span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-sm font-semibold text-orange-600">Em andamento</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Teams -->
+                <div class="flex items-center gap-2 mb-4">
+                    <div class="flex-1 flex items-center justify-end gap-2 min-w-0">
+                        <span class="font-bold text-gray-900 text-base truncate text-right
+                                     {% if not match.home_team %}text-gray-400 italic{% endif %}">{{ home_name }}</span>
+                        <span class="text-2xl shrink-0">{{ home_flag }}</span>
+                    </div>
+                    <div class="shrink-0 text-gray-200 font-black text-xl px-1 select-none">–</div>
+                    <div class="flex-1 flex items-center gap-2 min-w-0">
+                        <span class="text-2xl shrink-0">{{ away_flag }}</span>
+                        <span class="font-bold text-gray-900 text-base truncate
+                                     {% if not match.away_team %}text-gray-400 italic{% endif %}">{{ away_name }}</span>
+                    </div>
+                </div>
+
+                <!-- Bet form or status -->
+                {% if open %}
+                <form method="post" action="/palpites/{{ match.id }}"
+                      class="flex items-center justify-center gap-3">
+                    <input type="number" name="home_score" min="0" max="20" required
+                        value="{{ bet.home_score if bet else '' }}" placeholder="0"
+                        class="w-16 h-12 rounded-xl border-2 text-center text-xl font-black text-gray-900
+                               focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors
+                               {% if bet %}border-green-400 bg-green-50{% else %}border-gray-200{% endif %}">
+                    <span class="text-xl text-gray-200 font-black select-none">–</span>
+                    <input type="number" name="away_score" min="0" max="20" required
+                        value="{{ bet.away_score if bet else '' }}" placeholder="0"
+                        class="w-16 h-12 rounded-xl border-2 text-center text-xl font-black text-gray-900
+                               focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition-colors
+                               {% if bet %}border-green-400 bg-green-50{% else %}border-gray-200{% endif %}">
+                    <button type="submit"
+                            class="font-bold px-5 py-3 rounded-xl transition-colors text-base
+                                   {% if bet %}bg-green-600 hover:bg-green-700 text-white{% else %}bg-gray-800 hover:bg-gray-900 text-white{% endif %}">
+                        {% if bet %}✓{% else %}Apostar{% endif %}
+                    </button>
+                </form>
+                {% if bet %}
+                <p class="text-sm text-center text-green-600 mt-2 font-medium">Apostado · toque para atualizar</p>
+                {% endif %}
+
+                {% elif bet %}
+                <!-- Closed but has bet -->
+                <div class="flex items-center justify-center gap-3 py-1">
+                    <span class="text-sm text-gray-600">Seu palpite:</span>
+                    <span class="text-xl font-black text-gray-500 tabular-nums">{{ bet.home_score }} – {{ bet.away_score }}</span>
+                    <span class="text-sm font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">Aguardando resultado</span>
+                </div>
+
+                {% else %}
+                <!-- Closed, no bet -->
+                <div class="text-center py-1">
+                    <span class="text-sm text-gray-600 italic">Prazo encerrado · sem palpite</span>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endfor %}
+        </div>
+    </div>
+
+{% endfor %}
+</div>
+{% endif %}
+
+<script>
+(function () {
+    var CUTOFF = 5 * 60; // prazo fecha 5 min antes do apito
+
+    function fmt(secs) {
+        var d = Math.floor(secs / 86400);
+        var h = Math.floor((secs % 86400) / 3600);
+        var m = Math.floor((secs % 3600) / 60);
+        if (d > 0) return 'em ' + d + 'd ' + h + 'h';
+        if (h > 0) return 'em ' + h + 'h ' + m + 'min';
+        if (m > 0) return 'em ' + m + 'min';
+        return 'em breve';
+    }
+
+    function tick() {
+        var now = Date.now() / 1000;
+        document.querySelectorAll('.countdown[data-kickoff]').forEach(function (el) {
+            var kickoff  = new Date(el.dataset.kickoff).getTime() / 1000;
+            var deadline = kickoff - CUTOFF;
+            var toKick   = Math.floor(kickoff - now);
+            var toDead   = Math.floor(deadline - now);
+            var badge    = el.parentElement.querySelector('.urgency-badge');
+
+            // Countdown mostra tempo até o apito (mais intuitivo)
+            el.textContent = toKick > 0 ? fmt(toKick) : 'em breve';
+
+            if (!badge) return;
+
+            if (toDead <= 0) {
+                // Prazo já passou — esconde badge (card some do form via server)
+                badge.classList.add('hidden');
+                return;
+            }
+
+            var mins = Math.ceil(toDead / 60);
+
+            if (toDead <= 600) {
+                // < 10 min para fechar — vermelho pulsante
+                badge.className = 'urgency-badge text-sm font-bold px-2 py-0.5 rounded-full border ' +
+                    'text-red-600 bg-red-50 border-red-200 animate-pulse';
+                badge.textContent = '⚡ Fecha em ' + mins + 'min';
+                badge.classList.remove('hidden');
+            } else if (toDead <= 3600) {
+                // < 1h para fechar — laranja estático
+                badge.className = 'urgency-badge text-sm font-semibold px-2 py-0.5 rounded-full border ' +
+                    'text-orange-500 bg-orange-50 border-orange-200';
+                badge.textContent = '⚡ ' + mins + 'min';
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        });
+    }
+
+    tick();
+    setInterval(tick, 10000); // atualiza a cada 10s para o badge ficar preciso
+})();
+</script>
+
+{% endblock %}

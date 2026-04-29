@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Ranking — TecBall 2026{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex items-center justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">📊 Ranking</h1>
+        <p class="text-gray-600 mt-0.5">{{ ranking | length }} participantes</p>
+    </div>
+</div>
+
+{% for r in ranking %}{% if r.id == user.id %}
+<!-- Banner: sua posição -->
+<div class="mb-5 bg-green-700 text-white rounded-xl px-5 py-4 flex items-center justify-between shadow">
+    <div class="flex items-center gap-3">
+        <span class="text-3xl font-black">{{ r.position }}º</span>
+        <div>
+            <div class="font-semibold text-lg leading-tight">{{ r.name }}</div>
+            <div class="text-green-200 text-sm">Sua posição atual</div>
+        </div>
+    </div>
+    <div class="text-right">
+        <div class="text-3xl font-black">{{ r.total }}</div>
+        <div class="text-green-200 text-sm">pontos</div>
+    </div>
+</div>
+{% endif %}{% endfor %}
+
+<div class="card overflow-hidden p-0">
+    <table class="w-full">
+        <thead class="bg-gray-100 border-b border-gray-200">
+            <tr>
+                <th class="text-left text-sm font-bold text-gray-700 uppercase px-5 py-3 w-14">Pos</th>
+                <th class="text-left text-sm font-bold text-gray-700 uppercase px-5 py-3">Participante</th>
+                <th class="text-center text-sm font-bold text-gray-700 uppercase px-3 py-3 hidden sm:table-cell">Jogos</th>
+                <th class="text-center text-sm font-bold text-gray-700 uppercase px-3 py-3 hidden sm:table-cell">Especiais</th>
+                <th class="text-center text-sm font-bold text-gray-700 uppercase px-5 py-3">Total</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+        {% for r in ranking %}
+        <tr id="user-{{ r.id }}" class="{% if r.id == user.id %}bg-green-50 border-l-4 border-green-500{% else %}hover:bg-gray-50{% endif %} transition-colors">
+            <td class="px-5 py-3.5">
+                {% if r.position == 1 %}
+                <span class="text-2xl">🥇</span>
+                {% elif r.position == 2 %}
+                <span class="text-2xl">🥈</span>
+                {% elif r.position == 3 %}
+                <span class="text-2xl">🥉</span>
+                {% else %}
+                <span class="text-gray-600 font-bold text-base">{{ r.position }}º</span>
+                {% endif %}
+            </td>
+            <td class="px-5 py-3.5">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full {% if r.id == user.id %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-600{% endif %} flex items-center justify-center font-bold text-base shrink-0">
+                        {{ r.name[0].upper() }}
+                    </div>
+                    <a href="/usuarios/{{ r.id }}" class="font-semibold text-gray-900 text-base hover:text-green-700 hover:underline transition-colors">{{ r.name }}</a>
+                    {% if r.id == user.id %}<span class="text-sm text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-medium">Você</span>{% endif %}
+                </div>
+            </td>
+            <td class="px-3 py-3.5 text-center text-base font-medium text-gray-700 hidden sm:table-cell">{{ r.bet_pts }}</td>
+            <td class="px-3 py-3.5 text-center text-base font-medium text-gray-700 hidden sm:table-cell">{{ r.special_pts }}</td>
+            <td class="px-5 py-3.5 text-center">
+                <span class="font-black text-xl {% if r.position == 1 %}text-yellow-500{% elif r.position == 2 %}text-gray-500{% elif r.position == 3 %}text-amber-600{% elif r.id == user.id %}text-green-700{% else %}text-gray-800{% endif %}">
+                    {{ r.total }}
+                </span>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" class="px-5 py-10 text-center text-gray-500 text-base">Nenhum participante ainda.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

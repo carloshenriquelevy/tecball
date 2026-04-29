@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Palpites Especiais — TecBall 2026{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="/palpites" class="text-sm text-gray-600 hover:text-gray-900">← Voltar aos palpites</a>
+    <h1 class="text-2xl font-bold text-gray-800 mt-2">🏅 Palpites Especiais</h1>
+    <p class="text-gray-500 text-sm">Escolha o campeão, vice, 3º e 4º lugar. Pontuação extra garantida!</p>
+</div>
+
+<div class="grid md:grid-cols-2 gap-6">
+    <div class="card">
+        <div class="bg-yellow-50 border border-yellow-100 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-yellow-800 mb-2">Pontuação</h3>
+            <div class="text-sm text-yellow-700 space-y-1">
+                <div class="flex justify-between"><span>🥇 Campeão</span><span class="font-bold">30 pts</span></div>
+                <div class="flex justify-between"><span>🥈 Vice-campeão</span><span class="font-bold">20 pts</span></div>
+                <div class="flex justify-between"><span>🥉 3º lugar</span><span class="font-bold">15 pts</span></div>
+                <div class="flex justify-between"><span>4º lugar</span><span class="font-bold">10 pts</span></div>
+            </div>
+        </div>
+
+        {% if not specials_open %}
+        <div class="bg-red-50 border border-red-100 rounded-lg p-4 mb-4 text-sm text-red-700">
+            🔒 O prazo para palpites especiais encerrou. Os palpites abaixo não podem mais ser alterados.
+        </div>
+        {% endif %}
+
+        <form method="post" action="/palpites/especiais" class="space-y-5">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">🥇 Campeão</label>
+                <select name="champion_id" required {% if not specials_open %}disabled{% endif %} class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400">
+                    <option value="">Selecione o campeão</option>
+                    {% for team in teams %}
+                    <option value="{{ team.id }}" {% if special and special.champion_id == team.id %}selected{% endif %}>
+                        {{ team.flag }} {{ team.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">🥈 Vice-campeão</label>
+                <select name="runner_up_id" required {% if not specials_open %}disabled{% endif %} class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400">
+                    <option value="">Selecione o vice</option>
+                    {% for team in teams %}
+                    <option value="{{ team.id }}" {% if special and special.runner_up_id == team.id %}selected{% endif %}>
+                        {{ team.flag }} {{ team.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">🥉 3º lugar</label>
+                <select name="third_id" required {% if not specials_open %}disabled{% endif %} class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400">
+                    <option value="">Selecione o 3º</option>
+                    {% for team in teams %}
+                    <option value="{{ team.id }}" {% if special and special.third_id == team.id %}selected{% endif %}>
+                        {{ team.flag }} {{ team.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">4️⃣ 4º lugar</label>
+                <select name="fourth_id" required {% if not specials_open %}disabled{% endif %} class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none disabled:bg-gray-100 disabled:text-gray-400">
+                    <option value="">Selecione o 4º</option>
+                    {% for team in teams %}
+                    <option value="{{ team.id }}" {% if special and special.fourth_id == team.id %}selected{% endif %}>
+                        {{ team.flag }} {{ team.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if specials_open %}
+            <button type="submit" class="btn-primary w-full py-3">
+                {% if special %}Atualizar palpites{% else %}Salvar palpites{% endif %}
+            </button>
+            {% endif %}
+        </form>
+    </div>
+
+    {% if special %}
+    <div class="card h-fit">
+        <h3 class="font-semibold text-gray-700 mb-4">Seus palpites atuais</h3>
+        <div class="space-y-3">
+            <div class="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg">
+                <span class="text-2xl">🥇</span>
+                <div>
+                    <div class="text-sm text-gray-600">Campeão</div>
+                    <div class="font-semibold">{{ special.champion.flag }} {{ special.champion.name }}</div>
+                </div>
+                <span class="ml-auto font-bold text-green-600">30 pts</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="text-2xl">🥈</span>
+                <div>
+                    <div class="text-sm text-gray-600">Vice-campeão</div>
+                    <div class="font-semibold">{{ special.runner_up.flag }} {{ special.runner_up.name }}</div>
+                </div>
+                <span class="ml-auto font-bold text-green-600">20 pts</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="text-2xl">🥉</span>
+                <div>
+                    <div class="text-sm text-gray-600">3º lugar</div>
+                    <div class="font-semibold">{{ special.third.flag }} {{ special.third.name }}</div>
+                </div>
+                <span class="ml-auto font-bold text-green-600">15 pts</span>
+            </div>
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                <span class="text-2xl">4️⃣</span>
+                <div>
+                    <div class="text-sm text-gray-600">4º lugar</div>
+                    <div class="font-semibold">{{ special.fourth.flag }} {{ special.fourth.name }}</div>
+                </div>
+                <span class="ml-auto font-bold text-green-600">10 pts</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

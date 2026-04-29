@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% block title %}Jogos — TecBall 2026{% endblock %}
+
+{% block content %}
+
+{% if not live_matches and not finished_matches %}
+<div class="card text-center text-gray-500 py-12 text-base">
+    Nenhum jogo iniciado ainda.
+</div>
+{% else %}
+
+<div class="grid lg:grid-cols-3 gap-6">
+
+    <!-- Coluna principal -->
+    <div class="lg:col-span-2 space-y-10">
+
+        <!-- ── Ao vivo ──────────────────────────────────────────────────── -->
+        {% if live_matches %}
+        <div>
+            <h2 class="text-sm font-bold text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2">
+                <span class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                Ao vivo ({{ live_matches | length }})
+            </h2>
+
+            {% for group_name, group_matches in live_by_group.items() %}
+            <div class="mb-6">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-sm font-bold text-gray-600 uppercase tracking-wider">Grupo {{ group_name }}</span>
+                    <div class="flex-1 h-px bg-gray-200"></div>
+                </div>
+                <div class="space-y-4">
+                {% for match in group_matches %}
+                {% set bets_by_user = {} %}
+                {% for bet in match.bets %}{% if bets_by_user.update({bet.user_id: bet}) %}{% endif %}{% endfor %}
+                {% set bet_count = bets_by_user | length %}
+                {% set total_users = users | length %}
+
+                <div class="card p-0 overflow-hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-5 py-4 bg-gray-50 border-b border-gray-200">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-sm font-bold text-gray-600 shrink-0">#{{ match.match_number }}</span>
+                            <span class="text-lg shrink-0">{{ match.home_team.flag if match.home_team else '🏳' }}</span>
+                            <span class="font-semibold text-gray-900 truncate">{{ match.home_team.name if match.home_team else 'A definir' }}</span>
+                            <span class="text-gray-600 text-sm shrink-0">vs</span>
+                            <span class="font-semibold text-gray-900 truncate">{{ match.away_team.name if match.away_team else 'A definir' }}</span>
+                            <span class="text-lg shrink-0">{{ match.away_team.flag if match.away_team else '🏳' }}</span>
+                        </div>
+                        <div class="flex items-center gap-3 shrink-0">
+                            {% if match.match_date %}
+                            <span class="text-sm text-gray-600">{{ match.match_date.strftime('%d/%m %H:%M') }}</span>
+                            {% endif %}
+                            <span class="bg-green-100 text-green-800 font-semibold px-3 py-1 rounded-full text-sm animate-pulse">● Em andamento</span>
+                        </div>
+                    </div>
+
+                    {% if bet_count > 0 %}
+                    <div class="px-5 py-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-600 uppercase tracking-wide">Palpites</span>
+                            <span class="text-sm text-gray-600">{{ bet_count }} de {{ total_users }}</span>
+                        </div>
+                        <div class="divide-y divide-gray-50 max-h-64 overflow-y-auto -mx-1 px-1">
+                            {% set user_bet = bets_by_user.get(current_user_id) %}
+                            {% if user_bet %}
+                            <div class="flex items-center gap-3 py-1.5 rounded bg-green-50 px-2 -mx-2">
+                                <div class="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-bold shrink-0">{{ user.name[0].upper() }}</div>
+                                <a href="/usuarios/{{ current_user_id }}" class="flex-1 text-sm font-semibold text-green-800 hover:underline truncate">
+                                    {{ user.name.split()[0] }} <span class="text-sm font-normal text-green-600">(você)</span>
+                                </a>
+                                {% set dots = form_dots.get(current_user_id, []) %}
+                                {% if dots %}<div class="flex items-center gap-0.5 shrink-0">{% for d in dots %}<span class="inline-block w-2 h-2 rounded-full {% if d == 'green' %}bg-green-500{% elif d == 'red' %}bg-red-400{% else %}bg-gray-300{% endif %}"></span>{% endfor %}</div>{% endif %}
+                                <span class="font-bold text-gray-900 text-sm tabular-nums shrink-0">{{ user_bet.home_score }} × {{ user_bet.away_score }}</span>
+                            </div>
+                            {% endif %}
+                            {% for u in users %}{% if u.id != current_user_id %}
+                            {% set bet = bets_by_user.get(u.id) %}
+                            {% if bet %}
+                            <div class="flex items-center gap-3 py-1.5">
+                                <div class="w-7 h-7 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-bold shrink-0">{{ u.name[0].upper() }}</div>
+                                <a href="/usuarios/{{ u.id }}" class="flex-1 text-sm text-gray-700 hover:text-green-700 hover:underline truncate">{{ u.name.split()[0] }}</a>
+                                {% set dots = form_dots.get(u.id, []) %}
+                                {% if dots %}<div class="flex items-center gap-0.5 shrink-0">{% for d in dots %}<span class="inline-block w-2 h-2 rounded-full {% if d == 'green' %}bg-green-500{% elif d == 'red' %}bg-red-400{% else %}bg-gray-300{% endif %}"></span>{% endfor %}</div>{% endif %}
+                                <span class="font-bold text-gray-700 text-sm tabular-nums shrink-0">{{ bet.home_score }} × {{ bet.away_score }}</span>
+                            </div>
+                            {% endif %}
+                            {% endif %}{% endfor %}
+                        </div>
+                        {% if bet_count < total_users %}
+                        <p class="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-100">{{ total_users - bet_count }} jogador(es) não apostaram neste jogo.</p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="px-5 py-4 text-sm text-gray-500">Nenhum palpite registrado para este jogo.</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ── Encerrados ───────────────────────────────────────────────── -->
+        {% if finished_matches %}
+        <div>
+            <h2 class="text-sm font-bold text-gray-600 uppercase tracking-widest mb-4">
+                Encerrados ({{ finished_matches | length }})
+            </h2>
+
+            {% for group_name, group_matches in finished_by_group.items() %}
+            <div class="mb-6">
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="text-sm font-bold text-gray-600 uppercase tracking-wider">Grupo {{ group_name }}</span>
+                    <div class="flex-1 h-px bg-gray-200"></div>
+                </div>
+                <div class="space-y-4">
+                {% for match in group_matches %}
+                {% set bets_by_user = {} %}
+                {% for bet in match.bets %}{% if bets_by_user.update({bet.user_id: bet}) %}{% endif %}{% endfor %}
+                {% set bet_count = bets_by_user | length %}
+                {% set total_users = users | length %}
+
+                <div class="card p-0 overflow-hidden">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-5 py-4 bg-gray-50 border-b border-gray-200">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <span class="text-sm font-bold text-gray-600 shrink-0">#{{ match.match_number }}</span>
+                            <span class="text-lg shrink-0">{{ match.home_team.flag if match.home_team else '🏳' }}</span>
+                            <span class="font-semibold text-gray-900 truncate">{{ match.home_team.name if match.home_team else '?' }}</span>
+                            <span class="text-gray-600 text-sm shrink-0">vs</span>
+                            <span class="font-semibold text-gray-900 truncate">{{ match.away_team.name if match.away_team else '?' }}</span>
+                            <span class="text-lg shrink-0">{{ match.away_team.flag if match.away_team else '🏳' }}</span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            {% if match.match_date %}
+                            <span class="text-sm text-gray-600">{{ match.match_date.strftime('%d/%m') }}</span>
+                            {% endif %}
+                            <span class="bg-gray-800 text-white font-bold px-3 py-1 rounded-lg text-sm tabular-nums">
+                                {{ match.home_score }} × {{ match.away_score }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if bet_count > 0 %}
+                    <div class="px-5 py-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-600 uppercase tracking-wide">Palpites</span>
+                            <span class="text-sm text-gray-600">{{ bet_count }} de {{ total_users }}</span>
+                        </div>
+                        <div class="divide-y divide-gray-50 max-h-64 overflow-y-auto -mx-1 px-1">
+                            {% set user_bet = bets_by_user.get(current_user_id) %}
+                            {% if user_bet %}
+                                {% if user_bet.points == 10 or user_bet.points == 15 %}
+                                    {% set row_bg = 'bg-green-50' %}
+                                    {% set pts_cls = 'text-green-700 bg-green-100' %}
+                                {% elif user_bet.points > 0 %}
+                                    {% set row_bg = 'bg-yellow-50' %}
+                                    {% set pts_cls = 'text-yellow-700 bg-yellow-100' %}
+                                {% else %}
+                                    {% set row_bg = 'bg-red-50' %}
+                                    {% set pts_cls = 'text-red-600 bg-red-100' %}
+                                {% endif %}
+                            <div class="flex items-center gap-3 py-1.5 rounded {{ row_bg }} px-2 -mx-2">
+                                <div class="w-7 h-7 rounded-full bg-green-600 text-white flex items-center justify-center text-sm font-bold shrink-0">{{ user.name[0].upper() }}</div>
+                                <a href="/usuarios/{{ current_user_id }}" class="flex-1 text-sm font-semibold text-gray-900 hover:underline truncate">
+                                    {{ user.name.split()[0] }} <span class="text-sm font-normal text-green-600">(você)</span>
+                                </a>
+                                {% set dots = form_dots.get(current_user_id, []) %}
+                                {% if dots %}<div class="flex items-center gap-0.5 shrink-0">{% for d in dots %}<span class="inline-block w-2 h-2 rounded-full {% if d == 'green' %}bg-green-500{% elif d == 'red' %}bg-red-400{% else %}bg-gray-300{% endif %}"></span>{% endfor %}</div>{% endif %}
+                                <span class="font-bold text-gray-800 text-sm tabular-nums shrink-0">{{ user_bet.home_score }} × {{ user_bet.away_score }}</span>
+                                <span class="text-sm font-bold px-1.5 py-0.5 rounded {{ pts_cls }} shrink-0">
+                                    {% if user_bet.points > 0 %}+{{ user_bet.points }}{% else %}0{% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
+                            {% for u in users %}{% if u.id != current_user_id %}
+                            {% set bet = bets_by_user.get(u.id) %}
+                            {% if bet %}
+                                {% if bet.points == 10 or bet.points == 15 %}
+                                    {% set pts_cls = 'text-green-700 bg-green-100' %}
+                                {% elif bet.points > 0 %}
+                                    {% set pts_cls = 'text-yellow-700 bg-yellow-100' %}
+                                {% else %}
+                                    {% set pts_cls = 'text-red-500 bg-red-50' %}
+                                {% endif %}
+                            <div class="flex items-center gap-3 py-1.5">
+                                <div class="w-7 h-7 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-sm font-bold shrink-0">{{ u.name[0].upper() }}</div>
+                                <a href="/usuarios/{{ u.id }}" class="flex-1 text-sm text-gray-700 hover:text-green-700 hover:underline truncate">{{ u.name.split()[0] }}</a>
+                                {% set dots = form_dots.get(u.id, []) %}
+                                {% if dots %}<div class="flex items-center gap-0.5 shrink-0">{% for d in dots %}<span class="inline-block w-2 h-2 rounded-full {% if d == 'green' %}bg-green-500{% elif d == 'red' %}bg-red-400{% else %}bg-gray-300{% endif %}"></span>{% endfor %}</div>{% endif %}
+                                <span class="font-bold text-gray-700 text-sm tabular-nums shrink-0">{{ bet.home_score }} × {{ bet.away_score }}</span>
+                                <span class="text-sm font-bold px-1.5 py-0.5 rounded {{ pts_cls }} shrink-0">
+                                    {% if bet.points > 0 %}+{{ bet.points }}{% else %}0{% endif %}
+                                </span>
+                            </div>
+                            {% endif %}
+                            {% endif %}{% endfor %}
+                        </div>
+                        {% if bet_count < total_users %}
+                        <p class="text-sm text-gray-500 mt-2 pt-2 border-t border-gray-100">{{ total_users - bet_count }} jogador(es) não apostaram neste jogo.</p>
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="px-5 py-4 text-sm text-gray-500">Nenhum palpite registrado.</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Sidebar: ranking -->
+    <div class="lg:col-span-1">
+        <div class="card sticky top-4">
+            <h2 class="font-bold text-gray-800 text-base mb-3">🏆 Pontuação</h2>
+            {% if ranking %}
+            <div class="divide-y divide-gray-50 max-h-96 overflow-y-auto -mx-1 px-1">
+            {% for row in ranking %}{% set i = loop.index0 %}
+            <div class="flex items-center gap-2 py-1.5 {% if row.user.id == current_user_id %}bg-green-50 rounded-lg px-2 -mx-2{% endif %}">
+                <span class="text-sm font-bold w-6 text-center shrink-0
+                    {% if i == 0 %}text-yellow-500{% elif i == 1 %}text-gray-400{% elif i == 2 %}text-amber-600{% else %}text-gray-400{% endif %}">
+                    {% if i == 0 %}🥇{% elif i == 1 %}🥈{% elif i == 2 %}🥉{% else %}{{ i + 1 }}{% endif %}
+                </span>
+                <div class="w-6 h-6 rounded-full {% if row.user.id == current_user_id %}bg-green-600 text-white{% else %}bg-gray-200 text-gray-600{% endif %} flex items-center justify-center text-sm font-bold shrink-0">
+                    {{ row.user.name[0].upper() }}
+                </div>
+                <a href="/usuarios/{{ row.user.id }}" class="flex-1 text-sm truncate hover:underline
+                   {% if row.user.id == current_user_id %}font-semibold text-green-800 hover:text-green-700{% else %}text-gray-700 hover:text-green-700{% endif %}">
+                    {{ row.user.name.split()[0] }}
+                </a>
+                <span class="text-sm font-bold text-gray-800 tabular-nums shrink-0">{{ row.pts }}</span>
+            </div>
+            {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-500">Nenhum palpite pontuado ainda.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endif %}
+
+{% endblock %}

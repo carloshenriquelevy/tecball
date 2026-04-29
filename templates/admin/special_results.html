@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Palpites Especiais — Admin TecBall{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="/admin" class="text-sm text-gray-400 hover:text-gray-600">← Admin</a>
+    <h1 class="text-2xl font-bold text-gray-800 mt-1">🏅 Palpites Especiais</h1>
+    <p class="text-gray-500 text-sm">Calcule os pontos após a final</p>
+</div>
+
+<!-- Formulário para calcular -->
+<div class="card mb-6 max-w-lg">
+    <h2 class="font-semibold text-gray-700 mb-4">Resultado final (calcular pontos)</h2>
+    <form method="post" action="/admin/palpites-especiais/calcular" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">🥇 Campeão</label>
+                <select name="champion_id" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    {% for team in teams %}<option value="{{ team.id }}">{{ team.flag }} {{ team.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">🥈 Vice</label>
+                <select name="runner_up_id" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    {% for team in teams %}<option value="{{ team.id }}">{{ team.flag }} {{ team.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">🥉 3º lugar</label>
+                <select name="third_id" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    {% for team in teams %}<option value="{{ team.id }}">{{ team.flag }} {{ team.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">4️⃣ 4º lugar</label>
+                <select name="fourth_id" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    {% for team in teams %}<option value="{{ team.id }}">{{ team.flag }} {{ team.name }}</option>{% endfor %}
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn-primary">Calcular pontos</button>
+    </form>
+</div>
+
+<!-- Tabela de palpites -->
+<div class="card overflow-hidden p-0">
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-100">
+            <tr>
+                <th class="text-left px-5 py-3 text-sm font-semibold text-gray-500 uppercase">Participante</th>
+                <th class="text-center px-3 py-3 text-sm font-semibold text-gray-500 uppercase">🥇 Campeão</th>
+                <th class="text-center px-3 py-3 text-sm font-semibold text-gray-500 uppercase">🥈 Vice</th>
+                <th class="text-center px-3 py-3 text-sm font-semibold text-gray-500 uppercase">🥉 3º</th>
+                <th class="text-center px-3 py-3 text-sm font-semibold text-gray-500 uppercase">4º</th>
+                <th class="text-center px-5 py-3 text-sm font-semibold text-gray-500 uppercase">Pontos</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+        {% for s in specials %}
+        <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3 font-medium text-gray-800">{{ s.user.name }}</td>
+            <td class="px-3 py-3 text-center">{{ s.champion.flag if s.champion else '—' }} {{ s.champion.name if s.champion else '' }}</td>
+            <td class="px-3 py-3 text-center">{{ s.runner_up.flag if s.runner_up else '—' }} {{ s.runner_up.name if s.runner_up else '' }}</td>
+            <td class="px-3 py-3 text-center">{{ s.third.flag if s.third else '—' }} {{ s.third.name if s.third else '' }}</td>
+            <td class="px-3 py-3 text-center">{{ s.fourth.flag if s.fourth else '—' }} {{ s.fourth.name if s.fourth else '' }}</td>
+            <td class="px-5 py-3 text-center font-bold text-green-600">{{ s.points or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="px-5 py-10 text-center text-gray-400">Nenhum palpite especial ainda.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
