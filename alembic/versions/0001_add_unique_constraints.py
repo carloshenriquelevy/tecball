@@ -16,11 +16,16 @@ down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-stage_enum = sa.Enum('GROUP', 'R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL', name='stage')
+stage_enum = sa.Enum('GROUP', 'R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL', name='stage', create_type=False)
 
 
 def upgrade() -> None:
-    stage_enum.create(op.get_bind(), checkfirst=True)
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE stage AS ENUM ('GROUP', 'R32', 'R16', 'QF', 'SF', 'THIRD', 'FINAL');
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END $$;
+    """))
 
     op.create_table('users',
         sa.Column('id', sa.Integer(), nullable=False),
